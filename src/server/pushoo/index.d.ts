@@ -46,6 +46,20 @@ export interface NoticeOptions {
          */
         msgtype?: string;
     };
+    data?: {
+        /**
+         * url 评论文章地址
+         * text 评论原内容
+         * ip 评论人ip
+         * nick 评论人昵称
+         * mail 评论人邮箱
+         **/
+        url?: string;
+        ip?: string;
+        nick?: string;
+        mail?: string;
+        text?: string;
+    };
 }
 export interface CommonOptions {
     token: string;
@@ -56,7 +70,7 @@ export interface CommonOptions {
      */
     options?: NoticeOptions;
 }
-export type ChannelType = 'qmsg' | 'serverchan' | 'serverchain' | 'pushplus' | 'pushplushxtrip' | 'dingtalk' | 'wecom' | 'bark' | 'gocqhttp' | 'atri' | 'pushdeer' | 'igot' | 'telegram' | 'feishu' | 'ifttt' | 'wecombot' | 'discord' | 'wxpusher';
+export declare type ChannelType = 'qmsg' | 'serverchan' | 'serverchain' | 'pushplus' | 'pushplushxtrip' | 'dingtalk' | 'wecom' | 'bark' | 'gocqhttp' | 'atri' | 'pushdeer' | 'igot' | 'telegram' | 'feishu' | 'ifttt' | 'wecombot' | 'discord' | 'wxpusher';
 /**
  * https://qmsg.zendee.cn/
  */
@@ -131,4 +145,4 @@ declare function noticeWxPusher(options: CommonOptions): Promise<any>;
 declare function noticeWebhook(options: CommonOptions): Promise<any>;
 declare function notice(channel: ChannelType, options: CommonOptions): Promise<any>;
 export default notice;
-export { notice, noticeQmsg, noticeServerChan, noticePushPlus, noticePushPlusHxtrip, noticeDingTalk, noticeWeCom, noticeBark, noticeGoCqhttp, noticeAtri, noticePushdeer, noticeIgot, noticeTelegram, noticeFeishu, noticeIfttt, noticeWecombot, noticeDiscord, noticeWxPusher, noticeWebhook, };
+export { notice, noticeQmsg, noticeServerChan, noticePushPlus, noticePushPlusHxtrip, noticeDingTalk, noticeWeCom, noticeBark, noticeGoCqhttp, noticeAtri, noticePushdeer, noticeIgot, noticeTelegram, noticeFeishu, noticeIfttt, noticeWecombot, noticeDiscord, noticeWxPusher, noticeWebhook };

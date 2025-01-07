@@ -14,7 +14,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
-        while (g && (g = 0, op[0] && (_ = 0)), _) try {
+        while (_) try {
             if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
             if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
@@ -538,18 +538,17 @@ exports.noticeIfttt = noticeIfttt;
  */
 function noticeWecombot(options) {
     return __awaiter(this, void 0, void 0, function () {
-        var url, title, content, response;
+        var url, content, response;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     checkParameters(options, ['token', 'content']);
                     url = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=".concat(options.token);
-                    title = options.title || getTitle(options.content);
                     content = getTxt(options.content);
                     return [4 /*yield*/, axios_1["default"].post(url, {
                             msgtype: 'text',
                             text: {
-                                content: "".concat(title, " \n ").concat(content)
+                                content: content
                             }
                         }, {
                             headers: { 'Content-Type': 'application/json' }
@@ -633,33 +632,43 @@ function noticeWxPusher(options) {
 }
 exports.noticeWxPusher = noticeWxPusher;
 function noticeWebhook(options) {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
     return __awaiter(this, void 0, void 0, function () {
-        var url, format, title, content, response;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var url, format, token, title, content, response;
+        return __generator(this, function (_l) {
+            switch (_l.label) {
                 case 0:
                     checkParameters(options, ['token', 'content']);
                     url = new URL(options.token);
                     format = url.searchParams.get("format") && url.searchParams.get("format") === 'markdown' ? "markdown" : "text";
+                    token = url.searchParams.get("token") || url.searchParams.get("key") || '';
                     if (format === "text") {
                         title = getTxt(options.title);
                         content = getTxt(options.content);
                     }
                     else {
                         title = options.title;
-                        content: options.content;
+                        content = options.content;
                     }
-                    if (title)
-                        content: "".concat(title, "\n").concat(content);
                     return [4 /*yield*/, axios_1["default"].post(url.href, {
                             msgtype: format,
+                            title: title ? title : '',
                             content: content,
-                            key: 'ef8f8298-9d5b-4ae2-9a9d-2abe6312beda'
+                            url: ((_b = (_a = options === null || options === void 0 ? void 0 : options.options) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.url) || '',
+                            raw: {
+                                ip: (_d = (_c = options === null || options === void 0 ? void 0 : options.options) === null || _c === void 0 ? void 0 : _c.data) === null || _d === void 0 ? void 0 : _d.ip,
+                                nick: (_f = (_e = options === null || options === void 0 ? void 0 : options.options) === null || _e === void 0 ? void 0 : _e.data) === null || _f === void 0 ? void 0 : _f.nick,
+                                mail: (_h = (_g = options === null || options === void 0 ? void 0 : options.options) === null || _g === void 0 ? void 0 : _g.data) === null || _h === void 0 ? void 0 : _h.mail,
+                                text: (_k = (_j = options === null || options === void 0 ? void 0 : options.options) === null || _j === void 0 ? void 0 : _j.data) === null || _k === void 0 ? void 0 : _k.text
+                            }
                         }, {
-                            headers: { 'Content-Type': 'application/json' }
+                            headers: {
+                                'Content-Type': 'application/json;charset=utf-8',
+                                'X-API-Token': token
+                            }
                         })];
                 case 1:
-                    response = _a.sent();
+                    response = _l.sent();
                     if (response.status !== 200) {
                         throw new Error("\u53D1\u9001\u81EA\u5B9A\u4E49 webhook \u901A\u77E5\u5931\u8D25\uFF1A".concat(response.status));
                     }
