@@ -617,16 +617,19 @@ async function commentSubmit (event, request) {
         commentId: comment.id
       })
       
-      const baseUrl = `https://${process.env.VERCEL_URL || request.headers.host}`
       const recursionToken = config.ADMIN_PASS || 'true'
+      const baseUrl = process.env.VERCEL_URL 
+        ? `https://${process.env.VERCEL_URL}`
+        : `https://${request.headers.host}`
       await Promise.race([
-        axios.post(baseUrl, {
+        axios.post(baseUrl + '/api', {
           event: 'POST_SUBMIT',
           comment
         }, { 
           headers: { 
             'x-twikoo-recursion': recursionToken,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
           },
           timeout: 5000 // 如果超过 5 秒还没收到异步返回，直接继续，减少用户等待的时间
         }),
@@ -641,8 +644,9 @@ async function commentSubmit (event, request) {
         commentId: comment.id,
         error: e.message,
         status: e.response?.status,
-        url: `https://${process.env.VERCEL_URL || request.headers.host}`,
-        data: e.response?.data
+        url: baseUrl,
+        headers: e.response?.headers,
+        data: e.response?.data?.slice(0, 200)
 
       })
     }
@@ -1006,10 +1010,14 @@ function isAdmin () {
 
 // 判断是否为递归调用（即云函数调用自身）
 function isRecursion (request) {
-  if (!request.headers) return false
+  if (!request?.headers) return false
   const token = request.headers['x-twikoo-recursion']
-  const expectedToken = config.ADMIN_PASS || 'true'
-  return token === expectedToken
+  logger.info('验证递归调用:', {
+    token,
+    expected: config.ADMIN_PASS || 'true',
+    headers: request.headers
+  })
+  return token === (config.ADMIN_PASS || 'true')
 }
 
 // 建立数据库 collections
