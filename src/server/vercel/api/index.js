@@ -622,7 +622,7 @@ async function commentSubmit (event, request) {
       })
       
       await Promise.race([
-        axios.post(baseUrl + '/api', {
+        axios.post(baseUrl, {
           event: 'POST_SUBMIT',
           comment
         }, { 
@@ -647,7 +647,6 @@ async function commentSubmit (event, request) {
         status: e.response?.status,
         headers: e.response?.headers,
         data: e.response?.data?.slice(0, 200)
-
       })
     }
   } catch (e) {
