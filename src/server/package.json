@@ -10,6 +10,7 @@
     "url": "https://github.com/twikoojs/twikoo.git"
   },
   "homepage": "https://twikoo.js.org",
+
   "dependencies": {
     "get-user-ip": "^1.0.1",
     "mongodb": "^6.3.0",
@@ -29,7 +30,7 @@
     "jsdom": "^16.4.0",
     "marked": "^4.0.12",
     "nodemailer": "^6.4.17",
-    "pushoo": "latest",
+    "pushoo": "file:../../../pushoo",
     "tencentcloud-sdk-nodejs": "^4.0.65",
     "xml2js": "^0.6.0"
   }

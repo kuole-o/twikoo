@@ -11,7 +11,7 @@ const logger = require('./logger')
 
 let nodemailer
 
-function lazilyGetNodemailer () {
+function lazilyGetNodemailer() {
   return nodemailer ?? (nodemailer = getNodemailer())
 }
 
@@ -19,18 +19,40 @@ let transporter
 
 const fn = {
   // 发送通知
-  async sendNotice (comment, config, getParentComment) {
+  async sendNotice(comment, config, getParentComment) {
     if (comment.isSpam && config.NOTIFY_SPAM === 'false') return
-    await Promise.all([
-      fn.noticeMaster(comment, config),
-      fn.noticeReply(comment, config, getParentComment),
-      fn.noticePushoo(comment, config)
-    ]).catch(err => {
-      logger.error('通知异常：', err)
-    })
+
+    // 优化: 分别处理每个通知的错误，避免一个失败影响其他通知
+    const notifications = [
+      fn.noticeMaster(comment, config).catch(err => {
+        logger.error('博主通知失败:', {
+          error: err.message,
+          comment: { id: comment._id, nick: comment.nick }
+        })
+      }),
+      fn.noticeReply(comment, config, getParentComment).catch(err => {
+        logger.error('回复通知失败:', {
+          error: err.message,
+          comment: { id: comment._id, nick: comment.nick }
+        })
+      }),
+      fn.noticePushoo(comment, config).catch(err => {
+        logger.error('即时消息通知失败:', {
+          error: err.message,
+          comment: { id: comment._id, nick: comment.nick }
+        })
+      })
+    ]
+
+    try {
+      await Promise.all(notifications)
+      logger.info('所有通知发送完成')
+    } catch (err) {
+      logger.error('通知发送异常:', err)
+    }
   },
   // 初始化邮件插件
-  async initMailer ({ config, throwErr = false } = {}) {
+  async initMailer({ config, throwErr = false } = {}) {
     try {
       if (!config || !config.SMTP_USER || !config.SMTP_PASS) {
         throw new Error('数据库配置不存在')
@@ -69,7 +91,7 @@ const fn = {
     }
   },
   // 博主通知
-  async noticeMaster (comment, config) {
+  async noticeMaster(comment, config) {
     if (!transporter && !await fn.initMailer({ config })) {
       logger.info('未配置邮箱或邮箱配置有误，不通知')
       return
@@ -130,7 +152,7 @@ const fn = {
     return sendResult
   },
   // 即时消息通知
-  async noticePushoo (comment, config) {
+  async noticePushoo(comment, config) {
     if (!config.PUSHOO_CHANNEL || !config.PUSHOO_TOKEN) {
       logger.info('没有配置 pushoo，放弃即时消息通知')
       return
@@ -139,21 +161,45 @@ const fn = {
       logger.info('博主本人评论，不发送通知给博主')
       return
     }
-    const pushContent = fn.getIMPushContent(comment, config)
-    const sendResult = await pushoo(config.PUSHOO_CHANNEL, {
-      token: config.PUSHOO_TOKEN,
-      title: pushContent.subject,
-      content: pushContent.content,
-      options: {
-        bark: {
-          url: pushContent.url
+
+    try {
+      const pushContent = fn.getIMPushContent(comment, config)
+      logger.info('准备发送即时消息通知:', {
+        channel: config.PUSHOO_CHANNEL,
+        commentId: comment._id
+      })
+
+      const sendResult = await pushoo(config.PUSHOO_CHANNEL, {
+        token: config.PUSHOO_TOKEN,
+        title: pushContent.subject,
+        content: pushContent.content,
+        options: {
+          bark: {
+            url: pushContent.url
+          }
         }
+      })
+
+      if (sendResult.error) {
+        throw new Error(sendResult.error.message || '推送服务返回错误')
       }
-    })
-    logger.info('即时消息通知结果：', sendResult)
+
+      logger.info('即时消息通知成功:', {
+        channel: config.PUSHOO_CHANNEL,
+        commentId: comment._id
+      })
+      return sendResult
+    } catch (err) {
+      logger.error('即时消息通知异常:', {
+        channel: config.PUSHOO_CHANNEL,
+        error: err.message,
+        commentId: comment._id
+      })
+      throw err
+    }
   },
   // 即时消息推送内容获取
-  getIMPushContent (comment, config) {
+  getIMPushContent(comment, config) {
     const SITE_NAME = config.SITE_NAME
     const NICK = comment.nick
     const MAIL = comment.mail
@@ -176,7 +222,7 @@ const fn = {
     }
   },
   // 回复通知
-  async noticeReply (currentComment, config, getParentComment) {
+  async noticeReply(currentComment, config, getParentComment) {
     if (!currentComment.pid) {
       logger.info('无父级评论，不通知')
       return
@@ -248,14 +294,14 @@ const fn = {
     logger.log('回复通知结果：', sendResult)
     return sendResult
   },
-  appendHashToUrl (url, hash) {
+  appendHashToUrl(url, hash) {
     if (url.indexOf('#') === -1) {
       return `${url}#${hash}`
     } else {
       return `${url.substring(0, url.indexOf('#'))}#${hash}`
     }
   },
-  async emailTest (event, config, isAdminUser) {
+  async emailTest(event, config, isAdminUser) {
     const res = {}
     if (isAdminUser) {
       try {

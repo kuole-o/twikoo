@@ -599,32 +599,52 @@ async function like (id, uid) {
  */
 async function commentSubmit (event, request) {
   const res = {}
-  // 参数校验
-  validate(event, ['url', 'ua', 'comment'])
-  // 限流
-  await limitFilter(request)
-  // 验证码
-  await checkCaptcha(event, request)
-  // 预检测、转换
-  const data = await parse(event, request)
-  // 保存
-  const comment = await save(data)
-  res.id = comment.id
-  // 异步垃圾检测、发送评论通知
   try {
-    logger.log('开始异步垃圾检测、发送评论通知')
-    logger.log('POST_SUBMIT')
-    await Promise.race([
-      axios.post(`https://${process.env.VERCEL_URL}`, {
-        event: 'POST_SUBMIT',
-        comment
-      }, { headers: { 'x-twikoo-recursion': config.ADMIN_PASS || 'true' } }),
-      // 如果超过 5 秒还没收到异步返回，直接继续，减少用户等待的时间
-      new Promise((resolve) => setTimeout(resolve, 5000))
-    ])
-    logger.log('POST_SUBMIT')
+    // 参数校验
+    validate(event, ['url', 'ua', 'comment'])
+    // 限流
+    await limitFilter(request)
+    // 验证码
+    await checkCaptcha(event, request)
+    // 预检测、转换
+    const data = await parse(event, request)
+    // 保存
+    const comment = await save(data)
+    res.id = comment.id
+  // 异步垃圾检测、发送评论通知
+    try {
+      logger.info('开始异步垃圾检测、发送评论通知', {
+        commentId: comment.id
+      })
+      
+      const recursionToken = config.ADMIN_PASS || 'true'
+      await Promise.race([
+        axios.post(`https://${process.env.VERCEL_URL}`, {
+          event: 'POST_SUBMIT',
+          comment
+        }, { 
+          headers: { 
+            'x-twikoo-recursion': recursionToken
+          },
+          timeout: 5000 // 如果超过 5 秒还没收到异步返回，直接继续，减少用户等待的时间
+        }),
+        new Promise((resolve) => setTimeout(resolve, 5000))
+      ])
+      
+      logger.info('异步通知发送成功', {
+        commentId: comment.id
+      })
+    } catch (e) {
+      logger.error('异步通知发送失败:', {
+        commentId: comment.id,
+        error: e.message,
+        status: e.response?.status,
+        data: e.response?.data
+      })
+    }
   } catch (e) {
-    logger.error('POST_SUBMIT 失败', e.message)
+    logger.error('评论提交失败:', e)
+    res.message = e.message
   }
   return res
 }
@@ -647,13 +667,35 @@ async function getParentComment (currentComment) {
 
 // 异步垃圾检测、发送评论通知
 async function postSubmit (comment, request) {
-  if (!isRecursion(request)) return { code: RES_CODE.FORBIDDEN }
-  // 垃圾检测
-  const isSpam = await postCheckSpam(comment, config)
-  await saveSpamCheckResult(comment, isSpam)
-  // 发送通知
-  await sendNotice(comment, config, getParentComment)
-  return { code: RES_CODE.SUCCESS }
+  try {
+    if (!isRecursion(request)) {
+      logger.warn('非法的递归调用请求')
+      return { code: RES_CODE.FORBIDDEN }
+    }
+
+    // 垃圾检测
+    const isSpam = await postCheckSpam(comment, config)
+    await saveSpamCheckResult(comment, isSpam)
+    
+    // 发送通知
+    await sendNotice(comment, config, getParentComment)
+    
+    logger.info('垃圾检测和通知发送完成', {
+      commentId: comment._id,
+      isSpam
+    })
+    
+    return { code: RES_CODE.SUCCESS }
+  } catch (err) {
+    logger.error('postSubmit 处理失败:', {
+      commentId: comment._id,
+      error: err.message
+    })
+    return { 
+      code: RES_CODE.FAIL,
+      message: err.message
+    }
+  }
 }
 
 // 将评论转为数据库存储格式
@@ -960,7 +1002,8 @@ function isAdmin () {
 
 // 判断是否为递归调用（即云函数调用自身）
 function isRecursion (request) {
-  return request.headers['x-twikoo-recursion'] === (config.ADMIN_PASS || 'true')
+  const token = request.headers['x-twikoo-recursion']
+  return token === (config.ADMIN_PASS || 'true')
 }
 
 // 建立数据库 collections

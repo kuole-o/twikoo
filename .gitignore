@@ -123,3 +123,7 @@ pnpm-lock.yaml
 
 # macOS
 .DS_Store
+
+# pushoo
+src/server/pushoo/dist/
+src/server/pushoo/node_modules/
