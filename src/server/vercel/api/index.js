@@ -641,8 +641,9 @@ async function commentSubmit (event, request) {
         commentId: comment.id,
         error: e.message,
         status: e.response?.status,
-        data: e.response?.data,
-        url: `https://${process.env.VERCEL_URL || request.headers.host}`
+        url: `https://${process.env.VERCEL_URL || request.headers.host}`,
+        data: e.response?.data
+
       })
     }
   } catch (e) {
