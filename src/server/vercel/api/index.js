@@ -618,11 +618,9 @@ async function commentSubmit (event, request) {
       })
       
       const recursionToken = config.ADMIN_PASS || 'true'
-      const baseUrl = process.env.VERCEL_URL 
-        ? `https://${process.env.VERCEL_URL}`
-        : `https://${request.headers.host}`
+      const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : `https://${request.headers.host}`
       await Promise.race([
-        axios.post(baseUrl + '/api', {
+        axios.post(baseUrl, {
           event: 'POST_SUBMIT',
           comment
         }, { 
