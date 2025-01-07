@@ -61,7 +61,7 @@ module.exports = {
     return nodemailer
   },
   getPushoo () {
-    const pushoo = require('pushoo').default // 即时消息通知
+    const pushoo = require('../../../pushoo/index.js').default // 即时消息通知
     return pushoo
   },
   getTencentcloud () {

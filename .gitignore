@@ -125,5 +125,5 @@ pnpm-lock.yaml
 .DS_Store
 
 # pushoo
-src/server/pushoo/dist/
+# src/server/pushoo/dist/
 src/server/pushoo/node_modules/
