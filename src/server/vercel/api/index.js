@@ -614,21 +614,11 @@ async function commentSubmit (event, request) {
   // 异步垃圾检测、发送评论通知
     try {
       logger.info('开始异步垃圾检测、发送评论通知', {
-        commentId: comment.id,
-        baseUrl: process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : `https://${request.headers.host}`
-      })
-      
-      const recursionToken = config.ADMIN_PASS || 'true'
-      const baseUrl = process.env.CUSTOM_DOMAIN ? `https://${process.env.CUSTOM_DOMAIN}` : `https://${request.headers.host}`
-      
-      logger.info('递归调用详情:', {
-        url: baseUrl,
-        token: recursionToken?.slice(0, 6) + '...',
-        headers: request.headers
+        commentId: comment.id
       })
 
       await Promise.race([
-        axios.post(baseUrl, {
+        axios.post(`https://${process.env.CUSTOM_DOMAIN}`, {
           event: 'POST_SUBMIT',
           comment
         }, { headers: { 'x-twikoo-recursion': config.ADMIN_PASS || 'true' } }),
