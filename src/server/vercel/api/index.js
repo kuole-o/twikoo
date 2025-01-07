@@ -617,14 +617,16 @@ async function commentSubmit (event, request) {
         commentId: comment.id
       })
       
+      const baseUrl = `https://${process.env.VERCEL_URL || request.headers.host}`
       const recursionToken = config.ADMIN_PASS || 'true'
       await Promise.race([
-        axios.post(`https://${process.env.VERCEL_URL}`, {
+        axios.post(baseUrl, {
           event: 'POST_SUBMIT',
           comment
         }, { 
           headers: { 
-            'x-twikoo-recursion': recursionToken
+            'x-twikoo-recursion': recursionToken,
+            'Content-Type': 'application/json'
           },
           timeout: 5000 // 如果超过 5 秒还没收到异步返回，直接继续，减少用户等待的时间
         }),
@@ -639,7 +641,8 @@ async function commentSubmit (event, request) {
         commentId: comment.id,
         error: e.message,
         status: e.response?.status,
-        data: e.response?.data
+        data: e.response?.data,
+        url: `https://${process.env.VERCEL_URL || request.headers.host}`
       })
     }
   } catch (e) {
@@ -1002,8 +1005,10 @@ function isAdmin () {
 
 // 判断是否为递归调用（即云函数调用自身）
 function isRecursion (request) {
+  if (!request.headers) return false
   const token = request.headers['x-twikoo-recursion']
-  return token === (config.ADMIN_PASS || 'true')
+  const expectedToken = config.ADMIN_PASS || 'true'
+  return token === expectedToken
 }
 
 // 建立数据库 collections
