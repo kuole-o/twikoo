@@ -5,7 +5,7 @@
       "src": "vercel/api/index.js",
       "use": "@vercel/node",
       "config": {
-        "prebuild": "cd ../../../pushoo && pnpm install && pnpm run build && cd ../twikoo/src/server/vercel && yarn install"
+        "prebuild": "cd pushoo && pnpm install && pnpm run build && cd ../vercel && yarn install"
       }
     }
   ],
