@@ -613,14 +613,16 @@ async function commentSubmit (event, request) {
     res.id = comment.id
   // 异步垃圾检测、发送评论通知
     try {
+      const recursionToken = config.ADMIN_PASS || 'true'
+      const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : `https://${request.headers.host}`
+
       logger.info('开始异步垃圾检测、发送评论通知', {
+        baseUrl,
         commentId: comment.id
       })
       
-      const recursionToken = config.ADMIN_PASS || 'true'
-      const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : `https://${request.headers.host}`
       await Promise.race([
-        axios.post(baseUrl, {
+        axios.post(baseUrl + '/api', {
           event: 'POST_SUBMIT',
           comment
         }, { 
@@ -635,14 +637,14 @@ async function commentSubmit (event, request) {
       ])
       
       logger.info('异步通知发送成功', {
-        commentId: comment.id
+        commentId: comment.id,
+        status: response.status
       })
     } catch (e) {
       logger.error('异步通知发送失败:', {
         commentId: comment.id,
         error: e.message,
         status: e.response?.status,
-        url: baseUrl,
         headers: e.response?.headers,
         data: e.response?.data?.slice(0, 200)
 
