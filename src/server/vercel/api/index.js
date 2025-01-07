@@ -613,28 +613,30 @@ async function commentSubmit (event, request) {
     res.id = comment.id
   // 异步垃圾检测、发送评论通知
     try {
-      const recursionToken = config.ADMIN_PASS || 'true'
-      const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : `https://${request.headers.host}`
-
       logger.info('开始异步垃圾检测、发送评论通知', {
-        baseUrl,
-        commentId: comment.id
+        commentId: comment.id,
+        baseUrl: process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : `https://${request.headers.host}`
       })
       
-      await Promise.race([
-        axios.post(baseUrl, {
-          event: 'POST_SUBMIT',
-          comment
-        }, { 
-          headers: { 
-            'x-twikoo-recursion': recursionToken,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          timeout: 5000 // 如果超过 5 秒还没收到异步返回，直接继续，减少用户等待的时间
-        }),
-        new Promise((resolve) => setTimeout(resolve, 5000))
-      ])
+      const recursionToken = config.ADMIN_PASS || 'true'
+      const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : `https://${request.headers.host}`
+      
+      logger.info('递归调用详情:', {
+        url: baseUrl,
+        token: recursionToken?.slice(0, 6) + '...',
+        headers: request.headers
+      })
+
+      const response = await axios.post(baseUrl, {
+        event: 'POST_SUBMIT',
+        comment
+      }, { 
+        headers: { 
+          'x-twikoo-recursion': recursionToken,
+          'Content-Type': 'application/json'
+        },
+        timeout: 5000
+      })
       
       logger.info('异步通知发送成功', {
         commentId: comment.id,
@@ -645,8 +647,11 @@ async function commentSubmit (event, request) {
         commentId: comment.id,
         error: e.message,
         status: e.response?.status,
-        headers: e.response?.headers,
-        data: e.response?.data?.slice(0, 200)
+        requestUrl: e.config?.url,
+        requestHeaders: e.config?.headers,
+        responseHeaders: e.response?.headers,
+        vercelUrl: process.env.VERCEL_URL,
+        host: request.headers.host
       })
     }
   } catch (e) {
